@@ -384,12 +384,10 @@ jobs:
           - os: macOS
             runner: ${{ (github.repository_owner == 'kunobi-ninja' && github.event.pull_request.head.repo.fork != true) && fromJSON('["self-hosted", "macOS", "ARM64", "mac-mini"]') || 'macos-latest' }}
             exe_suffix: ""
-          # Self-hosted Windows runner shared with this repo (kunobi org,
-          # group `kunobi`, label `kunobi-windows`). No fork-fallback expression
-          # like macOS: it's an internal runner and the Windows e2e is internal
-          # (#77); a fork PR simply can't reach it. Blocking like the other arms.
+          # Forks use hosted Windows; upstream-only labels otherwise queue forever.
+          # Windows remains blocking, with the same tests and fixture tools.
           - os: Windows
-            runner: ${{ fromJSON('["self-hosted", "Windows", "X64", "kunobi-windows"]') }}
+            runner: ${{ (github.repository_owner == 'kunobi-ninja' && github.event.pull_request.head.repo.fork != true) && fromJSON('["self-hosted", "Windows", "X64", "kunobi-windows"]') || 'windows-2022' }}
             exe_suffix: ".exe"
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -407,6 +405,31 @@ jobs:
       #                   perl/cmake are no longer needed: they were aws-lc-sys
       #                   build deps, and aws-lc-sys was dropped in favour of ring.
       #   MSVC link.exe presence is proven by a successful `cargo build`.
+      - name: Provision hosted Windows fixture tools
+        if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+        id: windows-tools
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: MINGW64
+          cache: false
+          install: make mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
+      - name: Expose hosted Windows fixture tools
+        if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.windows-tools.outputs.msys2-location }}
+        run: |
+          $bin = Join-Path $env:MSYS2_LOCATION 'mingw64/bin'
+          foreach ($pair in @(@('gcc.exe', 'cc.exe'), @('g++.exe', 'c++.exe'))) {
+            $alias = Join-Path $bin $pair[1]
+            if (-not (Test-Path $alias)) {
+              Copy-Item (Join-Path $bin $pair[0]) $alias
+            }
+          }
+          $bin >> $env:GITHUB_PATH
+          (Join-Path $env:MSYS2_LOCATION 'usr/bin') >> $env:GITHUB_PATH
+          'C:\Program Files\LLVM\bin' >> $env:GITHUB_PATH
+          'CLANG_CL_BIN=/c/Program Files/LLVM/bin' >> $env:GITHUB_ENV
       - name: Verify Windows build toolchain
         if: runner.os == 'Windows'
         run: |
@@ -428,7 +451,7 @@ jobs:
           echo "all build/fixture tools present"
         env:
           # VS-integrated LLVM is provisioned but not on the runner's default PATH.
-          CLANG_CL_BIN: "/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/x64/bin"
+          CLANG_CL_BIN: ${{ env.CLANG_CL_BIN || '/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/Llvm/x64/bin' }}
       # Point tool state at the per-run temp dir before installing. All the
       # self-hosted runners (macOS AND Windows) are persistent: shared rustup /
       # mise state goes stale and makes `mise --force rust` try to remove a
@@ -767,7 +790,7 @@ jobs:
   # Blocking: Windows is a first-class supported platform.
   test-windows:
     name: Test (Windows)
-    runs-on: ${{ fromJSON('["self-hosted", "Windows", "X64", "kunobi-windows"]') }}
+    runs-on: ${{ (github.repository_owner == 'kunobi-ninja' && github.event.pull_request.head.repo.fork != true) && fromJSON('["self-hosted", "Windows", "X64", "kunobi-windows"]') || 'windows-2022' }}
     needs: changes
     if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     # Windows on the self-hosted runner is the slowest leg: a from-scratch
@@ -782,6 +805,31 @@ jobs:
         timeout-minutes: 10
       # Fail fast if the runner is missing a build tool the dep graph needs
       # (ring → nasm, *-sys → cc). Mirrors the e2e job's check.
+      - name: Provision hosted Windows fixture tools
+        if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+        id: windows-tools
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: MINGW64
+          cache: false
+          install: make mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
+      - name: Expose hosted Windows fixture tools
+        if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+        shell: pwsh
+        env:
+          MSYS2_LOCATION: ${{ steps.windows-tools.outputs.msys2-location }}
+        run: |
+          $bin = Join-Path $env:MSYS2_LOCATION 'mingw64/bin'
+          foreach ($pair in @(@('gcc.exe', 'cc.exe'), @('g++.exe', 'c++.exe'))) {
+            $alias = Join-Path $bin $pair[1]
+            if (-not (Test-Path $alias)) {
+              Copy-Item (Join-Path $bin $pair[0]) $alias
+            }
+          }
+          $bin >> $env:GITHUB_PATH
+          (Join-Path $env:MSYS2_LOCATION 'usr/bin') >> $env:GITHUB_PATH
+          'C:\Program Files\LLVM\bin' >> $env:GITHUB_PATH
+          'CLANG_CL_BIN=/c/Program Files/LLVM/bin' >> $env:GITHUB_ENV
       - name: Verify Windows build toolchain
         run: |
           missing=
