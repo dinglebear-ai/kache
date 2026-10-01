@@ -87,9 +87,9 @@ jobs:
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - name: Connect shared MinIO Kache
         if: env.KACHE_CI_S3_ACCESS_KEY != '' && env.KACHE_CI_S3_SECRET_KEY != ''
-        uses: kunobi-ninja/kache-action@a257c055543c2840700a9bbca8f9c3094a421b1b # v0.13.0
+        uses: kunobi-ninja/kache-action@ad7317540dcdd71c904f7a60a87b620a0c0e67ed # v1
         with:
-          version: "0.13.0"
+          version: '0.28.1'
           s3-bucket: ${{ vars.KACHE_S3_BUCKET || 'kache' }}
           s3-region: us-east-1
           s3-prefix: ${{ vars.KACHE_S3_PREFIX || 'rust' }}
@@ -105,9 +105,9 @@ jobs:
           pr-comment: "false"
       - name: Use GitHub cache when MinIO credentials are unavailable
         if: env.KACHE_CI_S3_ACCESS_KEY == '' || env.KACHE_CI_S3_SECRET_KEY == ''
-        uses: kunobi-ninja/kache-action@a257c055543c2840700a9bbca8f9c3094a421b1b # v0.13.0
+        uses: kunobi-ninja/kache-action@ad7317540dcdd71c904f7a60a87b620a0c0e67ed # v1
         with:
-          version: "0.13.0"
+          version: '0.28.1'
           github-cache: "true"
           cache-executables: "false"
           pr-comment: "false"
@@ -461,12 +461,14 @@ jobs:
           rm -rf "$RUNNER_TEMP"/mise-dl-"$safe_runner"-* 2>/dev/null || true
           mise_dl="$RUNNER_TEMP/mise-dl-$safe_runner-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           mkdir -p "$mise_dl"
-          echo "MISE_DL_TMPDIR=$mise_dl" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=$RUNNER_TEMP/cargo" >> "$GITHUB_ENV"
-          echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data" >> "$GITHUB_ENV"
-          echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache" >> "$GITHUB_ENV"
-          echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state" >> "$GITHUB_ENV"
+          {
+            echo "MISE_DL_TMPDIR=$mise_dl"
+            echo "RUSTUP_HOME=$RUNNER_TEMP/rustup"
+            echo "CARGO_HOME=$RUNNER_TEMP/cargo"
+            echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data"
+            echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache"
+            echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state"
+          } >> "$GITHUB_ENV"
       # `cache: false` so the self-hosted runner's mise state never
       # round-trips through GHA cache (it accumulates broken shims).
       # The state dirs above are fresh per job, so there are no old
@@ -701,12 +703,14 @@ jobs:
           rm -rf "$RUNNER_TEMP"/mise-dl-"$safe_runner"-* 2>/dev/null || true
           mise_dl="$RUNNER_TEMP/mise-dl-$safe_runner-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           mkdir -p "$mise_dl"
-          echo "MISE_DL_TMPDIR=$mise_dl" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=$RUNNER_TEMP/cargo" >> "$GITHUB_ENV"
-          echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data" >> "$GITHUB_ENV"
-          echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache" >> "$GITHUB_ENV"
-          echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state" >> "$GITHUB_ENV"
+          {
+            echo "MISE_DL_TMPDIR=$mise_dl"
+            echo "RUSTUP_HOME=$RUNNER_TEMP/rustup"
+            echo "CARGO_HOME=$RUNNER_TEMP/cargo"
+            echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data"
+            echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache"
+            echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state"
+          } >> "$GITHUB_ENV"
       # Same setup as the `e2e` job — see that block for the
       # `cache: false` + `reshim: false` rationale.
       - name: Install Rust via mise
@@ -806,12 +810,14 @@ jobs:
           rm -rf "$RUNNER_TEMP"/mise-dl-"$safe_runner"-* 2>/dev/null || true
           mise_dl="$RUNNER_TEMP/mise-dl-$safe_runner-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           mkdir -p "$mise_dl"
-          echo "MISE_DL_TMPDIR=$mise_dl" >> "$GITHUB_ENV"
-          echo "RUSTUP_HOME=$RUNNER_TEMP/rustup" >> "$GITHUB_ENV"
-          echo "CARGO_HOME=$RUNNER_TEMP/cargo" >> "$GITHUB_ENV"
-          echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data" >> "$GITHUB_ENV"
-          echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache" >> "$GITHUB_ENV"
-          echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state" >> "$GITHUB_ENV"
+          {
+            echo "MISE_DL_TMPDIR=$mise_dl"
+            echo "RUSTUP_HOME=$RUNNER_TEMP/rustup"
+            echo "CARGO_HOME=$RUNNER_TEMP/cargo"
+            echo "MISE_DATA_DIR=$RUNNER_TEMP/mise-data"
+            echo "MISE_CACHE_DIR=$RUNNER_TEMP/mise-cache"
+            echo "MISE_STATE_DIR=$RUNNER_TEMP/mise-state"
+          } >> "$GITHUB_ENV"
       - name: Install Rust via mise
         uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
         env:
